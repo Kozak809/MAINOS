@@ -8,4 +8,5 @@ const apps = [
     { name: 'Remove BG', folder: 'rmbg' },
     { name: 'Image Converter', folder: 'convert'},
     { name: 'Image Compressor', folder: 'compress', defaultWidth: 500, defaultHeight: 600 },
+    { name: 'Image Editor', folder: 'imageditor'},
 ];
