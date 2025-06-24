@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../../styles.css">
+    <title>Document</title>
+</head>
+<body>
+    <div class="app-container">
+        <h2>Настройки</h2>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <label for="dotColor" style="margin: 0;">Цвет точек на главной:</label>
+            <input type="color" id="dotColor" value="#ffffff">
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <label for="dotCount" style="margin: 0;">Количество точек:</label>
+            <input type="range" id="dotCount" min="20" max="200" value="80">
+            <span id="dotCountValue">80</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <label for="dotSpeed" style="margin: 0;">Скорость точек:</label>
+            <input type="range" id="dotSpeed" min="0.2" max="5" step="0.1" value="2">
+            <span id="dotSpeedValue">2.0</span>
+        </div>
+    </div>
+    <script>
+    // Загрузка сохранённого цвета
+    const colorInput = document.getElementById('dotColor');
+    const saved = localStorage.getItem('dotColor');
+    if (saved) colorInput.value = saved;
+
+    colorInput.addEventListener('input', function() {
+        localStorage.setItem('dotColor', colorInput.value);
+        // Сообщаем главной странице о смене цвета
+        window.parent.postMessage({ type: 'setDotColor', color: colorInput.value }, '*');
+    });
+
+    // Количество точек
+    const dotCountInput = document.getElementById('dotCount');
+    const dotCountValue = document.getElementById('dotCountValue');
+    const savedCount = localStorage.getItem('dotCount');
+    if (savedCount) {
+        dotCountInput.value = savedCount;
+        dotCountValue.textContent = savedCount;
+    }
+    dotCountInput.addEventListener('input', function() {
+        dotCountValue.textContent = dotCountInput.value;
+        localStorage.setItem('dotCount', dotCountInput.value);
+        window.parent.postMessage({ type: 'setDotCount', value: Number(dotCountInput.value) }, '*');
+    });
+
+    // Скорость точек
+    const dotSpeedInput = document.getElementById('dotSpeed');
+    const dotSpeedValue = document.getElementById('dotSpeedValue');
+    const savedSpeed = localStorage.getItem('dotSpeed');
+    if (savedSpeed) {
+        dotSpeedInput.value = savedSpeed;
+        dotSpeedValue.textContent = Number(savedSpeed).toFixed(1);
+    }
+    dotSpeedInput.addEventListener('input', function() {
+        dotSpeedValue.textContent = Number(dotSpeedInput.value).toFixed(1);
+        localStorage.setItem('dotSpeed', dotSpeedInput.value);
+        window.parent.postMessage({ type: 'setDotSpeed', value: Number(dotSpeedInput.value) }, '*');
+    });
+    </script>
+</body>
+</html>

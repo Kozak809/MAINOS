@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="window-config" content='{"defaultWidth": 500, "defaultHeight": 500, "minWidth": 340, "minHeight": 340, "title": "Remove Duplicates", "resizable": true, "fullscreen": true, "centerOnOpen": true}'>
+    <title>Remove Duplicates</title>
+    <link rel="stylesheet" href="../../styles.css">
+    <style>
+        body { 
+            background: var( --background-color); 
+            color: var(--text-color); 
+            margin: 0; 
+            padding: 0; 
+        }
+        .app-container { 
+            max-width: 480px; 
+            margin: 32px auto; 
+            background: var(--container-bg); 
+            border-radius: 12px; 
+            box-shadow: 0 4px 24px #000a; 
+            padding: 24px; 
+            padding-right: 45px !important;
+        }
+        h2 { 
+            margin-top: 0; 
+            font-weight: 400; 
+        }
+        textarea { 
+            width: 100%; 
+            min-height: 120px; 
+            margin-bottom: 12px; 
+            background: #222; 
+            color: #fff; 
+        }
+        .file-input { 
+            margin-bottom: 10px; 
+        }
+        
+        .textarea-wrapper.dragover textarea {
+            outline: 2px solid var(--primary-color);
+            background: #222a;
+        }
+    </style>
+</head>
+<body>
+<div class="app-container">
+    <h2>Удаление дубликатов</h2>
+    <div class="textarea-wrapper">
+        <textarea id="inputText" placeholder="Вставьте строки или загрузите файл..."></textarea>
+        <input style="display: none;" type="file" id="fileInput" class="file-input" accept=".txt">
+    </div>
+    <div>
+        <button class="btn btn-primary" onclick="removeDuplicates()">Убрать дубликаты</button>
+        <button class="btn btn-primary" onclick="copyResult()">Скопировать результат</button>
+    </div>
+    <br>
+    <textarea class="result" id="result"></textarea>
+    <br>
+    <button class="btn btn-success" onclick="downloadResult()">Скачать</button>
+
+</div>
+<script>
+function removeDuplicates() {
+    const input = document.getElementById('inputText').value;
+    const lines = input.split(/\r?\n/);
+    const unique = Array.from(new Set(lines));
+    document.getElementById('result').textContent = unique.join('\n');
+}
+
+function copyResult() {
+    const result = document.getElementById('result').textContent;
+    if (result) {
+        navigator.clipboard.writeText(result);
+    }
+}
+
+function downloadResult() {
+    const result = document.getElementById('result').textContent;
+    if (!result) return;
+    const blob = new Blob([result], {type: 'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'deduplicated.txt';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+}
+
+document.getElementById('fileInput').addEventListener('change', function(e) {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        document.getElementById('inputText').value = evt.target.result;
+    };
+    reader.readAsText(file);
+});
+
+// Drag & Drop support
+const textareaWrapper = document.querySelector('.textarea-wrapper');
+const textarea = document.getElementById('inputText');
+
+textareaWrapper.addEventListener('dragover', function(e) {
+    e.preventDefault();
+    textareaWrapper.classList.add('dragover');
+});
+textareaWrapper.addEventListener('dragleave', function(e) {
+    textareaWrapper.classList.remove('dragover');
+});
+textareaWrapper.addEventListener('drop', function(e) {
+    e.preventDefault();
+    textareaWrapper.classList.remove('dragover');
+    if (e.dataTransfer.files.length > 0) {
+        const file = e.dataTransfer.files[0];
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            textarea.value = evt.target.result;
+        };
+        reader.readAsText(file);
+    }
+});
+</script>
+</body>
+</html> 

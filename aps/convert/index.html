@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Конвертер изображений</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    body {
+      text-align: center;
+    }
+    .result-container {
+      display: none;
+      margin: var(--spacing-md) 0;
+    }
+    .result-container img {
+      max-width: 100%;
+      border-radius: var(--border-radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+    .format-select {
+      margin: var(--spacing-md) 0;
+      font-size: 16px;
+      padding: var(--spacing-sm);
+      border-radius: var(--border-radius-md);
+      border: 1px solid var(--border-color);
+      background: var(--container-bg);
+      color: var(--text-color);
+    }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <h1>Конвертация изображений</h1>
+    <p>Загрузите изображение и выберите нужный формат</p>
+    <div class="upload-area" id="dropZone">
+      <p>Перетащите изображение сюда или</p>
+      <button class="btn btn-primary" id="uploadBtn">Выбрать файл</button>
+      <input type="file" id="upload" accept="image/*">
+    </div>
+    <select class="format-select" id="formatSelect">
+      <option value="png">PNG</option>
+      <option value="jpeg">JPEG</option>
+      <option value="webp">WEBP</option>
+    </select>
+    <button class="btn btn-primary" id="convertBtn" disabled>Конвертировать</button>
+    <div class="result-container" id="resultContainer">
+      <h3>Результат:</h3>
+      <img id="resultImg" src="" alt="Результат">
+      <br>
+      <button class="btn btn-success" id="downloadBtn">Скачать</button>
+    </div>
+    <div class="message message-error" id="errorMessage" style="display:none;"></div>
+  </div>
+  <script>
+    const uploadInput = document.getElementById('upload');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const dropZone = document.getElementById('dropZone');
+    const formatSelect = document.getElementById('formatSelect');
+    const convertBtn = document.getElementById('convertBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultImg = document.getElementById('resultImg');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    let originalFile = null;
+    let convertedBlob = null;
+
+    // Drag & Drop и выбор файла
+    uploadBtn.addEventListener('click', () => uploadInput.click());
+    uploadInput.addEventListener('change', handleFileSelect);
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleFile(file);
+      }
+    });
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    }
+
+    function handleFile(file) {
+      originalFile = file;
+      convertBtn.disabled = false;
+      errorMessage.style.display = 'none';
+      resultContainer.style.display = 'none';
+    }
+
+    convertBtn.addEventListener('click', async () => {
+      if (!originalFile) return;
+      errorMessage.style.display = 'none';
+      resultContainer.style.display = 'none';
+      try {
+        const format = formatSelect.value;
+        const img = new Image();
+        img.src = URL.createObjectURL(originalFile);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              showError('Ошибка конвертации');
+              return;
+            }
+            convertedBlob = blob;
+            resultImg.src = URL.createObjectURL(blob);
+            resultContainer.style.display = 'block';
+          }, `image/${format}`);
+        };
+        img.onerror = () => showError('Ошибка загрузки изображения');
+      } catch (err) {
+        showError('Ошибка конвертации: ' + err.message);
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!convertedBlob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(convertedBlob);
+      a.download = `converted.${formatSelect.value}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.style.display = 'block';
+    }
+  </script>
+</body>
+</html> 

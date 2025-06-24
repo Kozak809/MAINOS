@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Сжатие изображений</title>
+  <link rel="stylesheet" href="../../styles.css">
+  <style>
+    body { text-align: center; }
+    .result-container { display: none; margin: var(--spacing-md) 0; }
+    .result-container img { max-width: 100%; border-radius: var(--border-radius-md); box-shadow: var(--shadow-sm); }
+    .quality-select { margin: var(--spacing-md) 0; font-size: 16px; padding: var(--spacing-sm); border-radius: var(--border-radius-md); border: 1px solid var(--border-color); background: var(--container-bg); color: var(--text-color); }
+    .slider-label { margin-right: 8px; }
+    .slider-value { font-weight: bold; margin-left: 8px; }
+  </style>
+</head>
+<body>
+  <div class="app-container">
+    <h1>Сжатие изображений</h1>
+    <p>Загрузите изображение и выберите степень сжатия (качество)</p>
+    <div class="upload-area" id="dropZone">
+      <p>Перетащите изображение сюда или</p>
+      <button class="btn btn-primary" id="uploadBtn">Выбрать файл</button>
+      <input type="file" id="upload" accept="image/*">
+    </div>
+    <div style="margin: 16px 0; display: flex; align-items: center; justify-content: center; gap: 12px;">
+      <span class="slider-label">Качество:</span>
+      <input type="range" id="qualitySlider" min="40" max="100" value="85">
+      <span class="slider-value" id="qualityValue">85</span>
+    </div>
+    <button class="btn btn-primary" id="compressBtn" disabled>Сжать</button>
+    <div class="result-container" id="resultContainer">
+      <h3>Результат:</h3>
+      <img id="resultImg" src="" alt="Результат">
+      <br>
+      <button class="btn btn-success" id="downloadBtn">Скачать</button>
+    </div>
+    <div class="message message-error" id="errorMessage" style="display:none;"></div>
+  </div>
+  <script>
+    const uploadInput = document.getElementById('upload');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const dropZone = document.getElementById('dropZone');
+    const qualitySlider = document.getElementById('qualitySlider');
+    const qualityValue = document.getElementById('qualityValue');
+    const compressBtn = document.getElementById('compressBtn');
+    const resultContainer = document.getElementById('resultContainer');
+    const resultImg = document.getElementById('resultImg');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const errorMessage = document.getElementById('errorMessage');
+
+    let originalFile = null;
+    let compressedBlob = null;
+    let outputFormat = 'jpeg';
+    let originalType = 'image/jpeg';
+
+    // Drag & Drop и выбор файла
+    uploadBtn.addEventListener('click', () => uploadInput.click());
+    uploadInput.addEventListener('change', handleFileSelect);
+    dropZone.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      dropZone.classList.add('dragover');
+    });
+    dropZone.addEventListener('dragleave', () => {
+      dropZone.classList.remove('dragover');
+    });
+    dropZone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      dropZone.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('image/')) {
+        handleFile(file);
+      }
+    });
+
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) handleFile(file);
+    }
+
+    function handleFile(file) {
+      originalFile = file;
+      compressBtn.disabled = false;
+      errorMessage.style.display = 'none';
+      resultContainer.style.display = 'none';
+      // Определяем формат вывода и тип
+      originalType = file.type;
+      if (file.type === 'image/png') outputFormat = 'png';
+      else if (file.type === 'image/jpeg') outputFormat = 'jpeg';
+      else if (file.type === 'image/webp') outputFormat = 'webp';
+      else outputFormat = 'jpeg';
+    }
+
+    qualitySlider.addEventListener('input', () => {
+      qualityValue.textContent = qualitySlider.value;
+    });
+
+    compressBtn.addEventListener('click', async () => {
+      if (!originalFile) return;
+      errorMessage.style.display = 'none';
+      resultContainer.style.display = 'none';
+      try {
+        const quality = Number(qualitySlider.value) / 100;
+        const img = new Image();
+        img.src = URL.createObjectURL(originalFile);
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          canvas.width = img.width;
+          canvas.height = img.height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0);
+          let mime = originalType;
+          let q = quality;
+          if (outputFormat === 'png') {
+            mime = 'image/png';
+            q = undefined; // PNG всегда lossless
+          } else if (outputFormat === 'jpeg') {
+            mime = 'image/jpeg';
+          } else if (outputFormat === 'webp') {
+            mime = 'image/webp';
+          }
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              showError('Ошибка сжатия');
+              return;
+            }
+            compressedBlob = blob;
+            resultImg.src = URL.createObjectURL(blob);
+            resultContainer.style.display = 'block';
+          }, mime, q);
+        };
+        img.onerror = () => showError('Ошибка загрузки изображения');
+      } catch (err) {
+        showError('Ошибка сжатия: ' + err.message);
+      }
+    });
+
+    downloadBtn.addEventListener('click', () => {
+      if (!compressedBlob) return;
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(compressedBlob);
+      let ext = 'jpg';
+      if (outputFormat === 'png') ext = 'png';
+      else if (outputFormat === 'webp') ext = 'webp';
+      a.download = `compressed.${ext}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    });
+
+    function showError(msg) {
+      errorMessage.textContent = msg;
+      errorMessage.style.display = 'block';
+    }
+  </script>
+</body>
+</html> 
